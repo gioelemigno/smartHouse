@@ -8,6 +8,7 @@
 typedef struct Buffer_t{
     void* buffer;
     uint16_t size;
+    uint16_t max_size;
 }Buffer_t;
 
 extern Buffer_t RXBuffer;
@@ -17,7 +18,13 @@ int UART_init(unsigned long baud_rate);
 
 //Read from UART and store into buffer pointer
 //Using global RXBuffer for better performance
+//This function is not blocking!
 int UART_read(Buffer_t* buffer);
+
+//Read from UART and store into buffer pointer
+//Using global RXBuffer for better performance
+//waiting timeout_us if there is no data to read
+int UART_read_waiting(Buffer_t* buffer, double timeout_us);
 
 //Write buffer on UART
 //Using global TXBuffer for better performance

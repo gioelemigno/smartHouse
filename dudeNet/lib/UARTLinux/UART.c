@@ -5,15 +5,19 @@
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
+#include <time.h>
 
 #define BUFFER_SIZE 1024
 
-#define OPEN_MODE       O_RDWR | O_NOCTTY | O_NONBLOCK | O_SYNC
+#define OPEN_MODE       O_RDWR | O_NOCTTY | O_SYNC | O_NONBLOCK
 #define OPEN_DEVICE     "/dev/ttyUSB0"
 
 #ifdef PRINT_ERROR
     static inline void report_error();
 #endif
+
+static inline double getTime_us();
 
 int fd;
 
@@ -22,12 +26,14 @@ uint8_t buffRX[BUFFER_SIZE];
 
 Buffer_t RXBuffer = {
     .buffer = buffRX,
-    .size = 0
+    .size = 0,
+    .max_size = BUFFER_SIZE
 };
 
 Buffer_t TXBuffer = {
     .buffer = buffTX,
-    .size = 0
+    .size = 0,
+    .max_size = BUFFER_SIZE
 };
 
 int UART_init(unsigned long baud_rate){
@@ -146,14 +152,120 @@ int UART_init(unsigned long baud_rate){
 }
 
 int UART_read(Buffer_t* buffer){
+    int res = read(fd, buffer->buffer, buffer->max_size);
+    if(res == -1){
+        #ifdef PRINT_ERROR
+            report_error(__func__);
+        #endif
+        return -1;
+    }
+    buffer->size = res;
+    
+    #ifdef DEBUG_UART
+        printf("***************************************\n");
+        printf("%s Readed %d Bytes\n", __func__, res);
+        printBuffer(buffer);
+        printf("---------------------------------------\n");
+    #endif
+    return 0;
+}
+
+int UART_read_waiting(Buffer_t* buffer, double timeout_us){
+
+    #ifdef DEBUG_UART 
+        printf("**************** %s ***********************\n", __func__);
+    #endif
+
+    uint8_t serial_available = 0;
+    int res = ioctl(fd, FIONREAD, &serial_available);
+    if(res == -1){
+        #ifdef PRINT_ERROR
+            report_error(__func__);
+        #endif
+        return -1;
+    }
+
+    if(!serial_available){
+        double time_now = getTime_us();
+        double time_start = time_now;
+        
+        while(time_now - time_start < timeout_us && !serial_available){
+            time_now = getTime_us();
+            res = ioctl(fd, FIONREAD, &serial_available);
+            if(res == -1){
+                #ifdef PRINT_ERROR
+                    report_error(__func__);
+                #endif
+                return -1;
+            }
+        }
+        #ifdef DEBUG_UART
+            printf("%s: Waited %.2fuS\n", __func__, time_now-time_start);
+        #endif
+
+        if(!serial_available){
+            #ifdef DEBUG_UART
+                printf("---------------------------------------\n");
+            #endif
+
+            return -1;
+        }
+        
+    }
+    
+    res = read(fd, buffer->buffer, buffer->max_size);
+    if(res == -1){
+        #ifdef PRINT_ERROR
+            report_error(__func__);
+        #endif
+        return -1;
+    }
+    buffer->size = res;
+    
+    #ifdef DEBUG_UART
+        printf("%s Readed %d Bytes\n", __func__, res);
+        printBuffer(buffer);
+        printf("---------------------------------------\n");
+    #endif
     return 0;
 }
 
 int UART_write(Buffer_t* buffer){
+    #ifdef DEBUG_UART 
+        printf("**************** %s ***********************\n", __func__);
+    #endif
+    int res = write(fd, buffer->buffer, buffer->size);
+    if(res == -1){
+        #ifdef PRINT_ERROR
+            report_error(__func__);
+        #endif
+        return -1;
+    }
+
+	int resD = tcdrain(fd); // wait for trasmit end
+    if(res == -1){
+        #ifdef PRINT_ERROR
+            report_error(__func__);
+        #endif
+        return -1;
+    }
+
+    #ifdef DEBUG_UART
+        printf("%s Written %d Bytes\n", __func__, res);
+        printBuffer(buffer);
+        printf("----------------------------------------\n");
+    #endif
     return 0;
 }
 
 int UART_close(){
+    int res = close(fd);
+    if(res == -1){
+        #ifdef PRINT_ERROR
+            report_error(__func__);
+        #endif
+        return -1;
+    }
     return 0;
 }
 
@@ -175,3 +287,9 @@ int UART_close(){
         fprintf(stderr, "%s: %s\n", func_name, strerror(errno));
     }
 #endif
+
+static inline double getTime_us(){
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_sec*1E06+ts.tv_nsec*1E-03;
+}
