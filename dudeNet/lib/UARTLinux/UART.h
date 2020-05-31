@@ -3,6 +3,7 @@
 
 #define DEBUG_UART
 
+#define PRINT_ERROR
 
 typedef struct Buffer_t{
     void* buffer;

@@ -1,13 +1,21 @@
 #include "UART.h"
 #include <termios.h>
-
-#ifdef DEBUG_UART
-    #include <stdio.h>
-#endif
-
+#include <fcntl.h>
+#include <string.h>
+#include <errno.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #define BUFFER_SIZE 1024
 
+#define OPEN_MODE       O_RDWR | O_NOCTTY | O_NONBLOCK | O_SYNC
+#define OPEN_DEVICE     "/dev/ttyUSB0"
+
+#ifdef PRINT_ERROR
+    static inline void report_error();
+#endif
+
+int fd;
 
 uint8_t buffTX[BUFFER_SIZE];
 uint8_t buffRX[BUFFER_SIZE];
@@ -23,8 +31,16 @@ Buffer_t TXBuffer = {
 };
 
 int UART_init(unsigned long baud_rate){
-    speed_t myBaud;
 
+    fd = open(OPEN_DEVICE, OPEN_MODE);
+    if(fd == -1){
+        #ifdef PRINT_ERROR
+            report_error(__func__);
+        #endif
+        return -1;
+    }
+
+    speed_t myBaud;
     switch(baud_rate){  // code from WiringPi library
         case      50:	myBaud =      B50 ; break ;
         case      75:	myBaud =      B75 ; break ;
@@ -57,9 +73,75 @@ int UART_init(unsigned long baud_rate){
         case 3500000:	myBaud = B3500000 ; break ;
         case 4000000:	myBaud = B4000000 ; break ;
 
-        default:    return -1; break;
+        default:   
+            #ifdef PRINT_ERROR
+                fprintf(stderr, "%s: Baud rate not supported\n", __func__);
+            #endif
+
+            return -1; 
+        break;
     }
 
+    //termios setting
+    struct termios uart_setting;
+    int res;    
+    memset(&uart_setting, 0, sizeof(uart_setting));
+
+    res = tcgetattr(fd, &uart_setting);
+    if(res == -1){
+        #ifdef PRINT_ERROR
+            report_error(__func__);
+        #endif
+        return -1;
+    }
+    
+    res = cfsetispeed(&uart_setting, myBaud);
+    if(res == -1){
+        #ifdef PRINT_ERROR
+            report_error(__func__);
+        #endif
+        return -1;
+    }
+    res = cfsetospeed(&uart_setting, myBaud);
+    if(res == -1){
+        #ifdef PRINT_ERROR
+            report_error(__func__);
+        #endif
+        return -1;
+    }
+    
+    // setting to raw mode
+    /*
+        cfmakeraw() sets the terminal to something like the "raw" mode of the old Version 7 terminal 
+        driver: input is available character by character, echoing is disabled, and all special 
+        processing of terminal input and output characters is disabled. 
+        The terminal attributes are set as follows:
+        
+        termios_p->c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+        termios_p->c_oflag &= ~OPOST;
+        termios_p->c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+        termios_p->c_cflag &= ~(CSIZE | PARENB);
+        termios_p->c_cflag |= CS8;
+    */
+    cfmakeraw(&uart_setting);
+ 
+    
+    //uart_setting.c_cflag &= ~CSTOPB; //set 1 stop bit 
+    uart_setting.c_cflag |= CSTOPB; //set 2 stop bit 
+    
+    //USELESS CODE (same setting of raw mode)
+    uart_setting.c_cflag &= ~CSIZE ;
+    uart_setting.c_cflag |= CS8 ;
+    
+    res=tcsetattr(fd, TCSANOW, &uart_setting);
+    if(res == -1){
+        #ifdef PRINT_ERROR
+            report_error(__func__);
+        #endif
+        return -1;
+    }
+
+    usleep(10E03); //wait 10mS
     return 0;
 }
 
@@ -85,5 +167,11 @@ int UART_close(){
             if(!((i+1) % 32)) printf("\n\t\t"); 
         }
         printf("\n");
+    }
+#endif
+
+#ifdef  PRINT_ERROR
+    static inline void report_error(const char* func_name){
+        fprintf(stderr, "%s: %s\n", func_name, strerror(errno));
     }
 #endif
