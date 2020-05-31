@@ -170,7 +170,7 @@ int UART_read(Buffer_t* buffer){
     return 0;
 }
 
-int UART_read_waiting(Buffer_t* buffer, double timeout_us){
+int UART_read_waiting(Buffer_t* buffer, double* timeout_us){
 
     #ifdef DEBUG_UART 
         printf("**************** %s ***********************\n", __func__);
@@ -188,8 +188,9 @@ int UART_read_waiting(Buffer_t* buffer, double timeout_us){
     if(!serial_available){
         double time_now = getTime_us();
         double time_start = time_now;
+        double timeout = *timeout_us;
         
-        while(time_now - time_start < timeout_us && !serial_available){
+        while(time_now - time_start < timeout && !serial_available){
             time_now = getTime_us();
             res = ioctl(fd, FIONREAD, &serial_available);
             if(res == -1){
@@ -201,6 +202,7 @@ int UART_read_waiting(Buffer_t* buffer, double timeout_us){
         }
         #ifdef DEBUG_UART
             printf("%s: Waited %.2fuS\n", __func__, time_now-time_start);
+            *timeout_us = *timeout_us - (time_now-time_start);
         #endif
 
         if(!serial_available){

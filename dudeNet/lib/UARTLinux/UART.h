@@ -24,7 +24,8 @@ int UART_read(Buffer_t* buffer);
 //Read from UART and store into buffer pointer
 //Using global RXBuffer for better performance
 //waiting timeout_us if there is no data to read
-int UART_read_waiting(Buffer_t* buffer, double timeout_us);
+//it subtracts waited_time to timeout_us
+int UART_read_waiting(Buffer_t* buffer, double* timeout_us);
 
 //Write buffer on UART
 //Using global TXBuffer for better performance
