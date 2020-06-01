@@ -3,7 +3,11 @@
 #include <stdint.h>
 #include "DNError.h"
 
-#define MAX_PAYLOAD_SIZE    64
+#define START_0         0xFF
+#define START_1         0xFF
+
+// two bits are used to put crc after payload
+#define MAX_PAYLOAD_SIZE    64+2
 #define TIMEOUT_ms          100
 
 #define NO_ADDRESS          0
@@ -29,7 +33,7 @@ typedef struct packet_t{
 extern address_t myAddress;
 
 //Used by read function
-extern packet_t packetRX;
+extern volatile packet_t packetRX;
 
 //used by write function
 extern packet_t packetTX;
