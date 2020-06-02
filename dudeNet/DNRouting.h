@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include "DNError.h"
 
+//used in crc and tx 
+#define PRE_PAYLOAD_LENGTH    2+2+1 //((2B start + dst+src+size))
+
 #define START_0         0xFF
 #define START_1         0xFF
 
@@ -10,7 +13,7 @@
 #define MAX_PAYLOAD_SIZE    64+2
 #define TIMEOUT_ms          100
 
-#define NO_ADDRESS          0
+#define NO_ADDRESS          254
 
 typedef uint8_t address_t;
 
@@ -37,6 +40,12 @@ extern volatile packet_t packetRX;
 
 //used by write function
 extern packet_t packetTX;
+
+typedef void(*packetHandler_t)(volatile packet_t*);
+
+//function called when packetRX is ready (ISR)
+//used only in Atmega328P
+extern volatile packetHandler_t packetHandler;
 
 // read packet, if there isn't ready packet wait TIMEOUT_ms
 res_t DNRouting_read(packet_t* packet);

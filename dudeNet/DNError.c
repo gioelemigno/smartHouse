@@ -4,12 +4,12 @@
 
 err_t DNError;
 
-#ifdef DN_ERROR_VERBOSE && defined(PRINTABLE) 
+#if defined(DN_ERROR_VERBOSE) && defined(PRINTABLE) 
     const char* DNError_func; //indicates in which function error occurred
 #endif /* DN_ERROR_VERBOSE */
 
 
-#ifdef DN_ERROR_VERBOSE && defined(PRINTABLE) 
+#if defined(DN_ERROR_VERBOSE) && defined(PRINTABLE) 
     const char* DNError_verbose[N_ERROR] = {
         "No error",
         "Timeout",
@@ -19,7 +19,7 @@ err_t DNError;
     };
 #endif /* DN_ERROR_VERBOSE */
 
-#ifdef DN_ERROR_VERBOSE && defined(PRINTABLE) 
+#if defined(DN_ERROR_VERBOSE) && defined(PRINTABLE) 
     // print on stderr:
     //      <message>   \t      <error_func>: <error_verbose[DNError]>
     void DNError_infoError(const char* message){

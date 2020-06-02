@@ -9,7 +9,7 @@
     #include "../MAX485.h"
 #endif
     
-volatile uint8_t write_completed;
+volatile uint8_t UART_write_completed;
 
 uint8_t* TXBuffer = NULL;
 uint16_t TXBuffer_size = 0;
@@ -60,7 +60,7 @@ void UART_init(unsigned long baud_rate){
         MAX485_enableRX();
     #endif
 
-    write_completed = true;
+    UART_write_completed = true;
 
     sei(); //enable all interrupt (set Bit 7 Global Interrupt Enable in SREG)
 }
@@ -70,7 +70,7 @@ void UART_write(uint8_t* buffer, uint16_t size){
         MAX485_enableTX();
     #endif
 
-    write_completed = false;
+    UART_write_completed = false;
     TXBuffer_index = 0;
 
     TXBuffer = buffer;
@@ -94,7 +94,7 @@ ISR(USART_TX_vect){
         #ifdef RS485
             MAX485_enableRX();
         #endif
-        write_completed = true;
+        UART_write_completed = true;
     }
     else{
         UDR0 = TXBuffer[TXBuffer_index++];

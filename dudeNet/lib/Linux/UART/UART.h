@@ -31,6 +31,7 @@ int UART_read_waiting(Buffer_t* buffer, double* timeout_us);
 //Using global TXBuffer for better performance
 int UART_write(Buffer_t* buffer);
 
+
 int UART_close();
 
 #ifdef DEBUG_UART

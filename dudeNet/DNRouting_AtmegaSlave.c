@@ -1,13 +1,14 @@
 #include "DNRouting.h"
 #include "lib/Atmega328P/UART/UART.h"
+#include "lib/Atmega328P/readyPacketInterrupt.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "lib/CRC/CRC.h"
 
-//used in crc and tx 
-#define PRE_PAYLOAD_LENGTH    2+2+1 //((2B start + dst+src+size))
+//for debug
+#include "lib/Atmega328P/avrMacro.h"
 
 typedef struct RX_info_t{
     uint8_t reading_packet :1;
@@ -30,7 +31,6 @@ void get_size(uint8_t data);
 
 void get_payload(uint8_t data);
 
-//get MSB of CRC
 void get_CRC(uint8_t data);
 
 //if packet is not addressed to me, ignore payload and crc
@@ -38,7 +38,6 @@ void get_CRC(uint8_t data);
 void ignore_packet(uint8_t data);
 
 volatile RX_status_t RX_status = get_start_0;
-//volatile uint8_t payload_size =0;
 volatile uint8_t RX_index = 0;
 
 volatile RX_info_t RX_info ={
@@ -47,7 +46,11 @@ volatile RX_info_t RX_info ={
     .packet_ready=0
 };
 
-//volatile bool save_packet = false;
+void default_handler(volatile packet_t* pack){
+
+}
+
+volatile packetHandler_t packetHandler = default_handler;
 
 address_t myAddress = NO_ADDRESS;
 
@@ -61,21 +64,43 @@ ISR(USART_RX_vect){
     RX_status(UDR0);
 }
 
+
+
 // read packet, if there isn't ready packet wait TIMEOUT_ms
 res_t DNRouting_read(packet_t* packet){
-
+    // TODO
+    return -1;
 }
 
 // write packet
-// NOTE: this function add only start bytes and crc
+// NOTE: this function add only start bytes, src (myAddress) and crc
+// NOTE: this function add crc after payload to obtain contiguous array
 res_t DNRouting_write(packet_t* packet){
 
+    packet->src=myAddress;
+    
+    crc_t crc = crcFast((unsigned char*) packet, PRE_PAYLOAD_LENGTH + packet->size);
+    packet->crc_1 = (uint8_t) (crc>>8);
+    packet->crc_0 = (uint8_t) crc;
+
+    packet->payload[packet->size] = packet->crc_1;
+    packet->payload[packet->size+1] = packet->crc_0;
+    
+    while(!UART_write_completed); // wait previous write end
+    
+    UART_write((uint8_t*)packet, PRE_PAYLOAD_LENGTH + packet->size + 2);
 }
 
 //initialize network
 res_t DNRouting_init(unsigned long baud_rate){
     UART_init(baud_rate);
     crcInit(); //build lookup table
+    readyPacketInterrupt_init();
+    packetTX.start_0 =START_0;
+    packetTX.start_1=START_1;
+
+    sbi(DDRB, PB5);
+    cbi(PORTB, PB5);
 }
 
 
@@ -88,6 +113,7 @@ void get_start_0(uint8_t data){
     RX_status = get_start_1;
     RX_info.reading_packet=true;
     RX_info.packet_ready= false;
+
 }
 
 //wait start_1
@@ -99,12 +125,15 @@ void get_start_1(uint8_t data){
     packetRX.start_1 = data;
 
     RX_status = get_dst;
+
 }
 
 void get_dst(uint8_t data){
     if(data != myAddress){
         RX_info.packet_is_addressed_to_me = false;
     }
+    
+    RX_info.packet_is_addressed_to_me = true;
     packetRX.dst = data;
     RX_status = get_src;
 }
@@ -113,7 +142,7 @@ void get_src(uint8_t data){
     packetRX.src = data;
 
     RX_status = get_size;
-    RX_index=0;
+    //RX_index=0;
 
 }
 
@@ -123,16 +152,21 @@ void get_size(uint8_t data){
         RX_status = get_start_0;
         return;
     }
+               
+
     packetRX.size=data;
+    RX_index=0;
     if(RX_info.packet_is_addressed_to_me)   RX_status = get_payload;
     else RX_status = ignore_packet;
 }
 
 
 void get_payload(uint8_t data){
+     
     packetRX.payload[RX_index++] = data;
     if(RX_index == packetRX.size){
         RX_status=get_CRC;
+        
     }
 }
 
@@ -149,7 +183,6 @@ void ignore_packet(uint8_t data){
 }
 
 volatile uint8_t crc_n = 1; // crc_1 or crc_0
-//get MSB of CRC
 void get_CRC(uint8_t data){
     if(crc_n) {
         packetRX.crc_1=data;
@@ -175,4 +208,12 @@ void get_CRC(uint8_t data){
     }
     RX_status=get_start_0;
 
+    if(RX_info.packet_ready) readyPacketInterrupt_throwINT();
+
+    //sbi(DDRB, PB5);
+    //sbi(PORTB, PB5);
+
 }
+
+
+

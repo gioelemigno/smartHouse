@@ -13,7 +13,7 @@
 #define enable_TX_interrupt() sbi(UCSR0B, TXCIE0)
 #define disable_TX_interrupt() cbi(UCSR0B, TXCIE0)
 
-extern volatile uint8_t write_completed;
+extern volatile uint8_t UART_write_completed;
 
 void UART_init(unsigned long baud_rate);
 
