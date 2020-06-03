@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include "DNError.h"
 
+#define DN_ROUTING_DEBUG
+#define PRINTABLE
+
 //used in crc and tx 
 #define PRE_PAYLOAD_LENGTH    2+2+1 //((2B start + dst+src+size))
 
@@ -57,3 +60,6 @@ res_t DNRouting_write(packet_t* packet);
 //initialize network
 res_t DNRouting_init(unsigned long baud_rate);
 
+#if defined(DN_ROUTING_DEBUG) && defined(PRINTABLE) 
+    void DNRouting_printPacket(const char* packet_name, packet_t* packet);
+#endif /* DN_ERROR_VERBOSE */

@@ -27,13 +27,15 @@ uint8_t buffRX[BUFFER_SIZE];
 Buffer_t RXBuffer = {
     .buffer = buffRX,
     .size = 0,
-    .max_size = BUFFER_SIZE
+    .max_size = BUFFER_SIZE,
+    .index = 0
 };
 
 Buffer_t TXBuffer = {
     .buffer = buffTX,
     .size = 0,
-    .max_size = BUFFER_SIZE
+    .max_size = BUFFER_SIZE,
+    .index = 0
 };
 
 int UART_init(unsigned long baud_rate){
@@ -147,7 +149,7 @@ int UART_init(unsigned long baud_rate){
         return -1;
     }
 
-    usleep(10E03); //wait 10mS
+    usleep(100E03); //wait 100mS
     return 0;
 }
 
@@ -160,7 +162,7 @@ int UART_read(Buffer_t* buffer){
         return -1;
     }
     buffer->size = res;
-    
+    buffer->index=0;
     #ifdef DEBUG_UART
         printf("***************************************\n");
         printf("%s Readed %d Bytes\n", __func__, res);
@@ -223,7 +225,8 @@ int UART_read_waiting(Buffer_t* buffer, double* timeout_us){
         return -1;
     }
     buffer->size = res;
-    
+    buffer->index=0;
+
     #ifdef DEBUG_UART
         printf("%s Readed %d Bytes\n", __func__, res);
         printBuffer(buffer);

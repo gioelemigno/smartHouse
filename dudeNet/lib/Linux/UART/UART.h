@@ -9,6 +9,7 @@ typedef struct Buffer_t{
     void* buffer;
     uint16_t size;
     uint16_t max_size;
+    uint16_t index;
 }Buffer_t;
 
 extern Buffer_t RXBuffer;

@@ -23,7 +23,13 @@ err_t DNError;
     // print on stderr:
     //      <message>   \t      <error_func>: <error_verbose[DNError]>
     void DNError_infoError(const char* message){
+        fprintf(stderr, "\033[1;31m"); //bold red
+
         if(message == NULL) fprintf(stderr, "*** %s: %s ***\n", DNError_func, DNError_verbose[DNError]);
         else fprintf(stderr, "*** %s\t%s: %s ***\n", message, DNError_func, DNError_verbose[DNError]);
+    
+        fprintf(stderr,"\033[0m"); //remove color
+
     }
+
 #endif /* DN_ERROR_VERBOSE */

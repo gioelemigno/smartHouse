@@ -120,6 +120,7 @@ void get_start_0(uint8_t data){
 void get_start_1(uint8_t data){
     if(data!=START_1){
         RX_status = get_start_0;
+        RX_info.reading_packet=false;
         return;
     }
     packetRX.start_1 = data;
@@ -132,8 +133,8 @@ void get_dst(uint8_t data){
     if(data != myAddress){
         RX_info.packet_is_addressed_to_me = false;
     }
+    else    RX_info.packet_is_addressed_to_me = true;
     
-    RX_info.packet_is_addressed_to_me = true;
     packetRX.dst = data;
     RX_status = get_src;
 }
@@ -166,7 +167,7 @@ void get_payload(uint8_t data){
     packetRX.payload[RX_index++] = data;
     if(RX_index == packetRX.size){
         RX_status=get_CRC;
-        
+        return;
     }
 }
 
@@ -207,8 +208,10 @@ void get_CRC(uint8_t data){
         RX_info.packet_ready=true;
     }
     RX_status=get_start_0;
-
+    RX_info.reading_packet=false;
+    
     if(RX_info.packet_ready) readyPacketInterrupt_throwINT();
+    RX_info.packet_ready = false;
 
     //sbi(DDRB, PB5);
     //sbi(PORTB, PB5);
@@ -217,3 +220,7 @@ void get_CRC(uint8_t data){
 
 
 
+#if defined(DN_ROUTING_DEBUG) && defined(PRINTABLE) 
+    void DNRouting_printPacket(const char* packet_name, packet_t* packet){
+    }
+#endif /* DN_ERROR_VERBOSE */
