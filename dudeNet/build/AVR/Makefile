@@ -4,8 +4,11 @@ AVR_CFLAGS+=-Os -g -DF_CPU=16000000UL -flto -fuse-linker-plugin -Wl,--gc-section
 
 AVR_LIB_NAME=libDudeNetAVR
 
-$(AVR_LIB_NAME).a: DNError.o DNRouting_AtmegaSlave.o CRC.o readyPacketInterrupt.o UART.o
+$(AVR_LIB_NAME).a: dudeNet.o DNError.o DNRouting_AtmegaSlave.o CRC.o readyPacketInterrupt.o UART.o
 	ar rvs $(AVR_LIB_NAME).a $^
+
+dudeNet.o: ../../dudeNet.c ../../dudeNet.h DNError.o DNRouting_AtmegaSlave.o
+	$(CC) $(CFLAGS) $(DEFINE_FLAGS) -c  $< 
 
 DNError.o: ../../DNError.c ../../DNError.h 
 	$(AVR_CC) $(AVR_CFLAGS) $(DEFINE_FLAGS) -c  ../../DNError.c 

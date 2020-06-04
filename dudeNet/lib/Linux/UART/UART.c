@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <time.h>
+#include <stdlib.h>
 
 #define BUFFER_SIZE 1024
 
@@ -19,7 +20,7 @@
 
 static inline double getTime_us();
 
-int fd;
+int fd = -1;
 
 uint8_t buffTX[BUFFER_SIZE];
 uint8_t buffRX[BUFFER_SIZE];
@@ -45,6 +46,7 @@ int UART_init(unsigned long baud_rate){
         #ifdef PRINT_ERROR
             report_error(__func__);
         #endif
+        exit(EXIT_FAILURE);
         return -1;
     }
 
@@ -184,6 +186,7 @@ int UART_read_waiting(Buffer_t* buffer, double* timeout_us){
         #ifdef PRINT_ERROR
             report_error(__func__);
         #endif
+        exit(EXIT_FAILURE);
         return -1;
     }
 
@@ -199,6 +202,7 @@ int UART_read_waiting(Buffer_t* buffer, double* timeout_us){
                 #ifdef PRINT_ERROR
                     report_error(__func__);
                 #endif
+                exit(EXIT_FAILURE);
                 return -1;
             }
         }
@@ -244,16 +248,20 @@ int UART_write(Buffer_t* buffer){
         #ifdef PRINT_ERROR
             report_error(__func__);
         #endif
+        exit(EXIT_FAILURE);
         return -1;
     }
 
+    /*
 	int resD = tcdrain(fd); // wait for trasmit end
     if(res == -1){
         #ifdef PRINT_ERROR
             report_error(__func__);
         #endif
+        exit(EXIT_FAILURE);
         return -1;
     }
+    */
 
     #ifdef DEBUG_UART
         printf("%s Written %d Bytes\n", __func__, res);
@@ -264,6 +272,8 @@ int UART_write(Buffer_t* buffer){
 }
 
 int UART_close(){
+    if(fd==-1) return 0;
+
     int res = close(fd);
     if(res == -1){
         #ifdef PRINT_ERROR
@@ -271,6 +281,9 @@ int UART_close(){
         #endif
         return -1;
     }
+    #ifdef DEBUG_UART
+        fprintf(stderr, "UART closed\n");
+    #endif
     return 0;
 }
 

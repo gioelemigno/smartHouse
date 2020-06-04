@@ -2,12 +2,18 @@
 #include <util/delay.h>
 
 void netHandler(volatile packet_t* packet){
+    packetRX.dst=packetRX.src;
     DNRouting_write(&packetRX);
 }
 
 int main(){
     DNRouting_init(115200);
     myAddress = 0xA0;
+
+    #ifdef ADDRESS
+        myAddress = ADDRESS;
+    #endif
+    
     packetHandler = netHandler;
 
     /*

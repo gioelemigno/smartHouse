@@ -1,9 +1,9 @@
 #pragma once
 #include <stdint.h>
 
-#define DEBUG_UART
+//#define DEBUG_UART
 
-#define PRINT_ERROR
+//#define PRINT_ERROR
 
 typedef struct Buffer_t{
     void* buffer;

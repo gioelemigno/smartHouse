@@ -15,7 +15,7 @@ address_t myAddress = NO_ADDRESS;
 volatile packet_t packetRX;
 
 //used by write function
-packet_t packetTX;
+volatile packet_t packetTX;
 
 typedef struct RX_info_t{
     uint8_t reading_packet :1;
@@ -55,14 +55,15 @@ RX_packet_status_t RX_packet_status = get_start_0;
 //build packet
 // return 1 is packet is ready
 // return NOT_ADDRESS_TO_ME if there is a ready packet, but it is not for me
-static inline uint8_t buildPacket(uint8_t data, packet_t* packet);
+static inline uint8_t buildPacket(uint8_t data, volatile packet_t* packet);
 
 //return a bytes from buffer of UART
 //can return NO_DATA_TO_READ
 static inline uint16_t getChar(double* timeout);
 
 // read packet, if there isn't ready packet wait TIMEOUT_ms
-res_t DNRouting_read(packet_t* packet){
+res_t DNRouting_read(volatile packet_t* packet){
+    //usleep(1E03); //TODO TEST (reduce syscall)
     double timeout =  TIMEOUT_ms * 1E03;
     uint16_t data = getChar(&timeout);
     if(data==NO_DATA_TO_READ || timeout <= 0.0){
@@ -90,22 +91,10 @@ res_t DNRouting_read(packet_t* packet){
     }
 }
 
-// read packet, if there isn't ready packet wait TIMEOUT_ms
-res_t bak_DNRouting_read(packet_t* packet){
-    // TODO
-    double timeout =  TIMEOUT_ms * 1E03;
-    int res = UART_read_waiting(&RXBuffer, &timeout);
-    printf("MAIN waited %.2f\n", (TIMEOUT_ms * 1E03 - timeout));
-
-    if(res == -1) printf("nothing to read :(\n");
-    
-    return -1;
-}
-
 // write packet
 // NOTE: this function add only start bytes, src (myAddress) and crc
 // NOTE: this function add crc after payload to obtain contiguous array
-res_t DNRouting_write(packet_t* packet){
+res_t DNRouting_write(volatile packet_t* packet){
 
     packet->src=myAddress;
     
@@ -130,18 +119,24 @@ res_t DNRouting_init(unsigned long baud_rate){
     packetTX.start_1=START_1;
 }
 
+//free resource
+res_t DNRouting_close(){
+    int res = UART_close();
+    return res;
+}
+
 
 //return a bytes from buffer of UART
 static inline uint16_t getChar(double* timeout){
     if(RXBuffer.index >= RXBuffer.size){
         int res = UART_read_waiting(&RXBuffer, timeout);
-        if(res == -1) return NOT_ADDRESS_TO_ME;
+        if(res == -1) return NO_DATA_TO_READ;
     } 
     return (uint8_t)( ((uint8_t*)RXBuffer.buffer)[RXBuffer.index++] );
 }
 
 
-static inline uint8_t buildPacket(uint8_t data, packet_t* packet){
+static inline uint8_t buildPacket(uint8_t data, volatile packet_t* packet){
     switch(RX_packet_status){
         case get_start_0:
             if(data!=START_0)   return 0;
@@ -254,7 +249,7 @@ static inline uint8_t buildPacket(uint8_t data, packet_t* packet){
 }
 
 #if defined(DN_ROUTING_DEBUG) && defined(PRINTABLE) 
-    void DNRouting_printPacket(const char* packet_name, packet_t* packet){
+    void DNRouting_printPacket(const char* packet_name, volatile packet_t* packet){
         printf("\n%s:\n", packet_name);
         printf("\t| \033[1;33mSTART:\033[0m %2X %2X |", packet->start_0, packet->start_1);
         printf(" \033[1;33mDST:\033[0m %2X |", packet->dst);

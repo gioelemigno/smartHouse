@@ -58,7 +58,7 @@ address_t myAddress = NO_ADDRESS;
 volatile packet_t packetRX;
 
 //used by write function
-packet_t packetTX;
+volatile packet_t packetTX;
 
 ISR(USART_RX_vect){
     RX_status(UDR0);
@@ -67,7 +67,7 @@ ISR(USART_RX_vect){
 
 
 // read packet, if there isn't ready packet wait TIMEOUT_ms
-res_t DNRouting_read(packet_t* packet){
+res_t DNRouting_read(volatile packet_t* packet){
     // TODO
     return -1;
 }
@@ -75,7 +75,7 @@ res_t DNRouting_read(packet_t* packet){
 // write packet
 // NOTE: this function add only start bytes, src (myAddress) and crc
 // NOTE: this function add crc after payload to obtain contiguous array
-res_t DNRouting_write(packet_t* packet){
+res_t DNRouting_write(volatile packet_t* packet){
 
     packet->src=myAddress;
     
@@ -103,7 +103,9 @@ res_t DNRouting_init(unsigned long baud_rate){
     cbi(PORTB, PB5);
 }
 
-
+res_t DNRouting_close(){
+    return 0;
+}
 
 //wait start_0 
 void get_start_0(uint8_t data){
@@ -221,6 +223,6 @@ void get_CRC(uint8_t data){
 
 
 #if defined(DN_ROUTING_DEBUG) && defined(PRINTABLE) 
-    void DNRouting_printPacket(const char* packet_name, packet_t* packet){
+    void DNRouting_printPacket(const char* packet_name, volatile packet_t* packet){
     }
 #endif /* DN_ERROR_VERBOSE */

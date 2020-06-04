@@ -42,7 +42,7 @@ extern address_t myAddress;
 extern volatile packet_t packetRX;
 
 //used by write function
-extern packet_t packetTX;
+extern volatile packet_t packetTX;
 
 typedef void(*packetHandler_t)(volatile packet_t*);
 
@@ -51,15 +51,18 @@ typedef void(*packetHandler_t)(volatile packet_t*);
 extern volatile packetHandler_t packetHandler;
 
 // read packet, if there isn't ready packet wait TIMEOUT_ms
-res_t DNRouting_read(packet_t* packet);
+res_t DNRouting_read(volatile packet_t* packet);
 
 // write packet
 // NOTE: this function add only start bytes and crc
-res_t DNRouting_write(packet_t* packet);
+res_t DNRouting_write(volatile packet_t* packet);
 
 //initialize network
 res_t DNRouting_init(unsigned long baud_rate);
 
+//free resource
+res_t DNRouting_close();
+
 #if defined(DN_ROUTING_DEBUG) && defined(PRINTABLE) 
-    void DNRouting_printPacket(const char* packet_name, packet_t* packet);
+    void DNRouting_printPacket(const char* packet_name, volatile packet_t* packet);
 #endif /* DN_ERROR_VERBOSE */

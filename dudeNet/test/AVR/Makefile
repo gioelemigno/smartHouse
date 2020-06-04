@@ -40,6 +40,8 @@ AVRDUDE_FLAGS += -D -V -v -v -v  -C avrdude.conf
 #AVRDUDE_FLAGS += -D -q -V -C /usr/share/arduino/hardware/tools/avr/../avrdude.conf
 FIRMWARE = main
 
+DEFINE_FLAGS=-DADDRESS=0x3
+
 $(FIRMWARE).elf: main.c
 	$(CC) $(CFLAGS) $(LIBS) $(DEFINE_FLAGS) -o $(FIRMWARE).elf  main.c ../../build/AVR/libDudeNetAVR.a
 	avr-size -C --mcu=atmega328p main.elf
