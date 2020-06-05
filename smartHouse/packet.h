@@ -29,6 +29,7 @@ typedef struct application_packet_t{
     #define SET_ON          125
     #define SET_OFF         124
 
-    #define NONE            123      
+    #define NONE            123 
+    #define TOGGLE_STATUS   122     
 //used with controller
     #define READ            64

@@ -53,6 +53,10 @@ void netHandler(volatile packet_t* __packet){
                     packet_tx->command = DECREMENT;
                 break;
 
+                case 2:
+                    packet_tx->command = TOGGLE_STATUS;
+                break;
+
                 default:
                     packet_tx->command = NONE;
                 break;
