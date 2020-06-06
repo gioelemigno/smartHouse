@@ -21,5 +21,6 @@ void EEPROMLed_writeStatus(uint8_t status){
 }
 
 void EEPROMLed_writeBrightness(uint8_t birghtness){
+    //avoid useless write of same value
     eeprom_update_byte((uint8_t*)EEPROM_LED_BRIGHTNESS_INDEX, birghtness);
 }

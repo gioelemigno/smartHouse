@@ -3,8 +3,5 @@
 
 void controller_init(uint8_t analogInput);
 
-//return 1 to increment
-//return -1 to decrement
-// retrun 0 no command
-// return 2 to toggle status
+//read command from controller
 int8_t controller_read();

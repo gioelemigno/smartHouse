@@ -7,7 +7,7 @@
 
 #include "../../packet.h"
 
-volatile int8_t controller_command = 0;
+volatile int8_t controller_command = NONE;
 
 void netHandler(volatile packet_t* packet);
 
@@ -28,6 +28,12 @@ int main(){
 
     while(1){
         controller_command=controller_read();
+        
+        //avoid loop toogle_status when button pressed
+        if(controller_command == TOGGLE_STATUS){
+            while(controller_read() == TOGGLE_STATUS);
+            continue;
+        }
         Time_Atmega328_delay_ms(150); //smart delay
     }
 
@@ -44,6 +50,9 @@ void netHandler(volatile packet_t* __packet){
         case READ:
             packet_tx->dst = packet_rx->src;
             packet_tx->size=1;
+
+            packet_tx->command =controller_command;
+            /*
             switch (controller_command){
                 case 1:
                     packet_tx->command = INCREMENT;
@@ -61,11 +70,14 @@ void netHandler(volatile packet_t* __packet){
                     packet_tx->command = NONE;
                 break;
             }
+            */
             DNRouting_write(&packetTX);
-            controller_command=0;
+            controller_command=NONE;//0;
         break;
     
         default:
+            return;
+            /*
             packet_tx->dst = packet_rx->src;
             packet_tx->size=1;
             switch (controller_command){
@@ -83,6 +95,7 @@ void netHandler(volatile packet_t* __packet){
             }
             DNRouting_write(&packetTX);
             controller_command=0;
+            */
         break;
     }
 }

@@ -5,6 +5,8 @@
 #include <avr/io.h>
 #include "lib/avrMacro.h"
 
+#include "../../packet.h"
+
 //adc read <= ADC_MIDDLE - THRESOLD => increment
 //adc read >= ADC_MIDDLE + THRESOLD => decrement
 #define THRESOLD    200
@@ -25,22 +27,20 @@ void controller_init(uint8_t analogInput){
 
 }
 
-//return 1 to increment
-//return -1 to decrement
-// else return 0
+//read command from controller
 int8_t controller_read(){
     uint8_t oldSREG =SREG;
     cli();
     uint16_t read = ADC_Atmega328P_read(analog_pin);
     SREG = oldSREG;
 
-    if(read <= ADC_MIDDLE-THRESOLD)  return 1;
-    else if(read >= ADC_MIDDLE + THRESOLD) return -1;
+    if(read <= ADC_MIDDLE-THRESOLD) return INCREMENT;// return 1;
+    else if(read >= ADC_MIDDLE + THRESOLD) return DECREMENT;// return -1;
     else if( !rbi(PIND, PD2)){ //button pressed
         unsigned long time_start = Time_Atmega328_millis(); 
         while(Time_Atmega328_millis()- time_start < PIN_PRESSED_TIME_ms && !rbi(PIND, PD2));
-        if(!rbi(PIND, PD2)) return 2;   //toggle status
-        else return 0;
+        if(!rbi(PIND, PD2)) return TOGGLE_STATUS;// return 2;   //toggle status
+        else return NONE;// return 0;
     }
-    else return 0;
+    else return NONE; //return 0;
 }
