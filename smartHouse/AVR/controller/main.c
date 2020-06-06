@@ -28,7 +28,7 @@ int main(){
 
     while(1){
         controller_command=controller_read();
-        Time_Atmega328_delay_ms(100); //smart delay
+        Time_Atmega328_delay_ms(150); //smart delay
     }
 
 }

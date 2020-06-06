@@ -38,7 +38,7 @@ int8_t controller_read(){
     else if(read >= ADC_MIDDLE + THRESOLD) return -1;
     else if( !rbi(PIND, PD2)){ //button pressed
         unsigned long time_start = Time_Atmega328_millis(); 
-        while(Time_Atmega328_millis()- time_start > PIN_PRESSED_TIME_ms && !rbi(PIND, PD2));
+        while(Time_Atmega328_millis()- time_start < PIN_PRESSED_TIME_ms && !rbi(PIND, PD2));
         if(!rbi(PIND, PD2)) return 2;   //toggle status
         else return 0;
     }

@@ -23,8 +23,10 @@ void sigint_handler_init(){
 		exit(EXIT_FAILURE);
 	}
 }
-
+//read command from controller
 static inline int16_t read_controller();
+
+//send command to led
 static inline int16_t send_command_to_led(uint8_t command);
 
 int main(){
@@ -36,14 +38,22 @@ int main(){
 
 
     while(1){
-
-        int16_t res = read_controller();
+       // sleep(1);
+        int16_t res;
+        res = read_controller();
         if(res==-1){
             printf("Error read controller\n");
             continue;
         }
+        //continue;
+        if(res == NONE) continue;
 
-        sleep(1);
+        res = send_command_to_led(res);
+        if(res==-1){
+            printf("Error send command to led\n");
+            continue;
+        }
+
     }
 }
 
@@ -102,5 +112,31 @@ static inline int16_t read_controller(){
 }
 
 static inline int16_t send_command_to_led(uint8_t command){
+    application_packet_t* packet_rx = (application_packet_t*) (&(packetRX.dst)); 
+    
+    application_packet_t* packet_tx = (application_packet_t*) (&(packetTX.dst)); 
+    res_t res = 0;
+        
+    packet_tx->dst=ADDRESS_LED;
+    packet_tx->size=1;
+    packet_tx->command=command;
 
+    DNRouting_printPacket("WRITE", &packetTX);
+
+    res = DNRouting_write(&packetTX);
+    if(res == -1)   {
+        DNError_infoError(__func__);
+        return -1;
+    }
+    res = DNRouting_read(&packetRX);
+    if(res == -1) {
+        DNError_infoError(__func__);
+        return -1;
+    }
+    if(packet_rx->command == ACK) printf("Command OK\n");
+    else {
+        printf("Error command\n");
+        return -1;
+    }
+    return 0;
 }

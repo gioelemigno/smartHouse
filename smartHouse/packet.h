@@ -31,5 +31,7 @@ typedef struct application_packet_t{
 
     #define NONE            123 
     #define TOGGLE_STATUS   122     
+
+    #define ACK             121
 //used with controller
     #define READ            64
